@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/Pranay-ai/file-storage-system/database"
+	"github.com/Pranay-ai/file-storage-system/routes"
 	"github.com/Pranay-ai/file-storage-system/users"
 	"github.com/joho/godotenv"
 )
@@ -48,21 +49,8 @@ func main() {
 	userService := users.NewUserService(mongoService.Database)
 	userHandler := users.NewUserHandler(userService, jwtSecret)
 
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "healthy"}`))
-	})
-
-	mux.HandleFunc("/api/users/register", userHandler.Register)
-	mux.HandleFunc("/api/users/login", userHandler.Login)
-
-	protectedMux := http.NewServeMux()
-	protectedMux.HandleFunc("/api/users/profile", userHandler.Profile)
-
-	mux.Handle("/api/users/profile", userHandler.AuthMiddleware(protectedMux))
+	router := routes.NewRouter(userHandler)
+	mux := router.SetupRoutes()
 
 	server := &http.Server{
 		Addr:    ":" + port,
